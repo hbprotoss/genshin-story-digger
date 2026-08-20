@@ -19,7 +19,9 @@ def test_build_options_wires_model_env_and_mcp(cfg):
     assert opts.model == "mimo-v2.5-pro"
     assert opts.env["ANTHROPIC_BASE_URL"] == "https://api.xiaomimimo.com/anthropic"
     assert opts.env["ANTHROPIC_AUTH_TOKEN"] == "sk-test"
-    assert opts.permission_mode == "bypassPermissions"
+    assert opts.permission_mode == "default"
+    assert opts.allowed_tools
+    assert "mcp__mongo__*" in opts.allowed_tools
     assert opts.forward_subagent_text is True
     mcp = opts.mcp_servers["mongo"]
     assert mcp["type"] == "stdio"

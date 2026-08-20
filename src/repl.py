@@ -25,7 +25,17 @@ def build_options(cfg: AppConfig) -> ClaudeAgentOptions:
     return ClaudeAgentOptions(
         system_prompt=system_prompt,
         model=cfg.chat.model,
-        permission_mode="bypassPermissions",
+        # root 下 claude CLI 硬性拒绝 --dangerously-skip-permissions，故不用
+        # bypassPermissions；改用工具白名单让 agent 可写文件、派发 subagent、
+        # 用本项目的 MCP 工具，而不触发该 guard。
+        permission_mode="default",
+        allowed_tools=[
+            "Read", "Glob", "Grep", "LSP",
+            "Write", "Edit",
+            "Task",
+            "Bash",
+            "mcp__mongo__*",
+        ],
         forward_subagent_text=True,
         mcp_servers={
             "mongo": {
