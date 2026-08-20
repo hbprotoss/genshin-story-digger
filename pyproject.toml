@@ -1,0 +1,19 @@
+[project]
+name = "story-digger-agent"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "claude-agent-sdk>=0.2.140",
+    "fastmcp>=3.4.7",
+    "pymongo>=4.17.0",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=9.1.1",
+]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]

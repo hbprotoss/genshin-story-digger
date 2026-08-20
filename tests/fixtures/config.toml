@@ -1,0 +1,19 @@
+[mongo]
+host = "localhost"
+port = 27017
+database = "mihoyo"
+username = "super"
+password = "testpass"
+auth_source = "admin"
+
+[chat]
+stream = true
+base_url = "https://api.xiaomimimo.com/anthropic"
+api_key = "sk-test"
+model = "mimo-v2.5-pro"
+temperature = 0.2
+debug_llm = true
+
+[agent]
+output_dir = "/tmp/story-digger-test-output"
+max_subagents = 3
