@@ -1,13 +1,19 @@
-"""交互式 REPL：claude-agent-sdk 驱动主 Agent，流式输出。"""
+"""交互式 REPL：claude-agent-sdk 驱动主 Agent，流式输出。
+
+使用一次性 query() 每回合调用 + session resume 实现多轮延续。
+这一模型在此端点下 ClaudeSDKClient 的 connect/query 多轮交互不稳定，
+而 query() 路径经实测可靠。
+"""
 
 from __future__ import annotations
 
 import argparse
 import asyncio
 import sys
+from dataclasses import replace
 from pathlib import Path
 
-from claude_agent_sdk import ClaudeAgentOptions, ClaudeSDKClient
+from claude_agent_sdk import ClaudeAgentOptions, query
 from claude_agent_sdk.types import TextBlock, ToolUseBlock
 
 from config import AppConfig, DEFAULT_CONFIG_PATH, load_config
@@ -67,41 +73,40 @@ def format_message(msg) -> str | None:
     return "\n".join(p for p in parts if p) or None
 
 
+async def _run_turn(prompt: str, opts: ClaudeAgentOptions, sid: str | None) -> tuple[str | None, bool]:
+    """执行一回合 query，返回 (new_session_id, interrupted)。"""
+    turn_opts = replace(opts, resume=sid) if sid else opts
+    new_sid = sid
+    interrupted = False
+    try:
+        async for msg in query(prompt=prompt, options=turn_opts):
+            text = format_message(msg)
+            if text:
+                print(text)
+            if new_sid is None:
+                new_sid = getattr(msg, "session_id", None)
+    except (KeyboardInterrupt, asyncio.CancelledError):
+        interrupted = True
+        print("\n（已打断本轮）")
+    except Exception as exc:  # LLM API 失败等：报告但保留会话
+        print(f"\n[出错] {exc}\n（会话保留，可重试）")
+    return new_sid, interrupted
+
+
 async def run_repl(cfg: AppConfig) -> None:
     options = build_options(cfg)
-    client = ClaudeSDKClient(options=options)
-    await client.connect()
     print(
-        f"已连接。故事挖掘员就绪（模型 {cfg.chat.model}）。"
+        f"故事挖掘员就绪（模型 {cfg.chat.model}）。"
         "输入故事线关键词开始，exit/quit 退出。"
     )
-    try:
-        while True:
-            try:
-                user_input = input("\n你> ").strip()
-            except EOFError:
-                break
-            if not user_input:
-                continue
-            if user_input in {"exit", "quit"}:
-                break
-            try:
-                await client.query(user_input)
-                async for msg in client.receive_messages():
-                    text = format_message(msg)
-                    if text:
-                        print(text)
-            except (KeyboardInterrupt, asyncio.CancelledError):
-                # Ctrl+C：打断当前轮，回到输入提示符
-                print("\n（已打断本轮）")
-                try:
-                    await client.interrupt()
-                except Exception:
-                    pass
-            except Exception as exc:  # LLM API 失败等：报告但保留会话
-                print(f"\n[出错] {exc}\n（会话保留，可重试）")
-    finally:
-        await client.disconnect()
+    session_id: str | None = None
+    while True:
+        user_input = input("\n你> ").strip()
+        if not user_input:
+            continue
+        if user_input in {"exit", "quit"}:
+            break
+        session_id, _ = await _run_turn(user_input, options, session_id)
 
 
 def main() -> None:
