@@ -5,6 +5,7 @@ from __future__ import annotations
 import tomllib
 from dataclasses import dataclass, field
 from pathlib import Path
+from urllib.parse import quote_plus
 
 DEFAULT_CONFIG_PATH = Path("/root/.story-digger-agent/config.toml")
 
@@ -22,7 +23,7 @@ class MongoConfig:
         # 认证库必须是 admin（super 用户建在 admin 下）；
         # URI 不指定目标库，用 client[database] 按名取库
         return (
-            f"mongodb://{self.username}:{self.password}"
+            f"mongodb://{quote_plus(self.username)}:{quote_plus(self.password)}"
             f"@{self.host}:{self.port}/?authSource={self.auth_source}"
         )
 

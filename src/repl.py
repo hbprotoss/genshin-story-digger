@@ -55,6 +55,8 @@ def build_options(cfg: AppConfig) -> ClaudeAgentOptions:
             },
         },
         env=cfg.sdk_env(),
+        # debug_llm 开启时将 SDK 调试日志写入 stderr
+        **({} if not cfg.chat.debug_llm else {"debug_stderr": sys.stderr}),
     )
 
 

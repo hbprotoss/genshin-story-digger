@@ -35,14 +35,14 @@ def test_sdk_env_maps_anthropic_vars():
     }
 
 
-def test_agent_section_is_optional():
+def test_agent_section_is_optional(tmp_path):
     # 无 [agent] 段时用默认值
-    tmp = Path("/tmp/sd-agentless.toml")
-    tmp.write_text(
+    path = tmp_path / "cfg.toml"
+    path.write_text(
         "[mongo]\nhost='h'\nport=1\ndatabase='d'\nusername='u'\npassword='p'\n"
         "[chat]\nbase_url='http://x'\napi_key='k'\nmodel='m'\n",
         encoding="utf-8",
     )
-    cfg = load_config(tmp)
+    cfg = load_config(path)
     assert cfg.agent.max_subagents == 5
     assert cfg.agent.output_dir == Path("./output")
