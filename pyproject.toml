@@ -3,6 +3,8 @@ name = "story-digger-agent"
 version = "0.1.0"
 description = "原神故事线挖掘 agent：从 MongoDB 六类游戏文本整理带出处的剧情文档"
 readme = "README.md"
+license = "GPL-3.0-or-later"
+license-files = ["LICENSE"]
 requires-python = ">=3.13"
 dependencies = [
     "claude-agent-sdk>=0.2.140",

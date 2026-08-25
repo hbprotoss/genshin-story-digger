@@ -4,7 +4,7 @@
 
 [![Python](https://img.shields.io/badge/Python-3.13+-blue.svg)](https://www.python.org/)
 [![uv](https://img.shields.io/badge/uv-package%20manager-blueviolet.svg)](https://docs.astral.sh/uv/)
-[![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
+[![License](https://img.shields.io/badge/license-GPLv3-green.svg)](LICENSE)
 
 ---
 
@@ -282,3 +282,11 @@ tests/
 ## 📖 设计文档
 
 - [架构文档](docs/architecture.md)
+
+---
+
+## 📜 许可证
+
+本项目采用 [GNU General Public License v3.0](LICENSE) 或更高版本授权。
+
+这意味着你可以自由使用、修改和分发本项目，但基于本项目的衍生作品必须同样以 GPLv3 开源。
