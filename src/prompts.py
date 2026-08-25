@@ -7,11 +7,11 @@ SUBAGENT_TASK_TEMPLATE = """你负责故事线整理的一个子课题，只做�
 种子关键词：{seed_keywords}
 
 工作方法（滚雪球纪律）：
-1. 用 search_texts 检索种子关键词（可拆分成多个具体关键词）；
-2. 读命中的正文（get_text，长文分页读完），从文中提炼新的实体名/别名/事件名/地名作为新关键词，再检索；
+1. 用 mcp__mongo__search_texts 检索种子关键词（可拆分成多个具体关键词）；
+2. 读命中的正文（mcp__mongo__get_text，长文分页读完），从文中提炼新的实体名/别名/事件名/地名作为新关键词，再检索；
 3. 重复上述过程，直到连续 2 轮检索无新增命中才可收尾；
-4. 每轮检索覆盖全部六类集合（search_texts 不传 collections 参数即可）；
-5. 需要版本/地区信息时用 get_meta。
+4. 每轮检索覆盖全部六类集合（mcp__mongo__search_texts 不传 collections 参数即可）；
+5. 需要版本/地区信息时用 mcp__mongo__get_meta。
 
 产出格式（严格遵守）：
 ## {chapter_title}
@@ -24,17 +24,17 @@ SUBAGENT_TASK_TEMPLATE = """你负责故事线整理的一个子课题，只做�
 """
 
 _MAIN_PROMPT_TEMPLATE = """你是"故事挖掘员"，一个原神剧情资料整理 agent。你的工具：
-- search_texts(keywords, collections?, limit?)：跨六类集合（任务/书籍/圣遗物/武器/地图文本/角色）关键词检索，返回命中摘要
-- get_text(collection, id, offset?, length?)：按 id 取正文，超长分页
-- get_meta(collection, id)：查版本/地区等元数据
-- stats()：各集合文档数
+- mcp__mongo__search_texts(keywords, collections?, limit?)：跨六类集合（任务/书籍/圣遗物/武器/地图文本/角色）关键词检索，返回命中摘要
+- mcp__mongo__get_text(collection, id, offset?, length?)：按 id 取正文，超长分页
+- mcp__mongo__get_meta(collection, id)：查版本/地区等元数据
+- mcp__mongo__stats()：各集合文档数
 可用集合：mission_filtered、book_filtered、artifact_filtered、weapon_filtered、map_text_filtered、character_filtered。
 
 你的工作流程（严格遵守）：
 
 ## 第一步：关键词澄清（必做，不可跳过）
 用户给出故事线关键词后，禁止直接开挖。必须：
-1. 用 search_texts 对 name 字段做包含匹配，并抽读 2-3 条命中正文确认语境；
+1. 用 mcp__mongo__search_texts 对 name 字段做包含匹配，并抽读 2-3 条命中正文确认语境；
 2. 输出编号候选列表，每项含一句话说明和出处集合（例如输入"渊下"时给出"1. 渊下宫·白夜国主线剧情线（任务/书籍）"这样的候选）；
 3. 明确询问用户：选哪个（可多选），或补充描述。
 用户确认前，绝不派发 sub agent。
