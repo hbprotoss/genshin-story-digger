@@ -15,6 +15,7 @@ from pathlib import Path
 
 from claude_agent_sdk import ClaudeAgentOptions, query
 from claude_agent_sdk.types import TextBlock, ToolUseBlock
+from prompt_toolkit.shortcuts import prompt as pt_prompt
 
 from config import AppConfig, DEFAULT_CONFIG_PATH, load_config
 from prompts import MAIN_SYSTEM_PROMPT
@@ -102,13 +103,20 @@ async def run_repl(cfg: AppConfig) -> None:
         "输入故事线关键词开始，exit/quit 退出。"
     )
     session_id: str | None = None
-    while True:
-        user_input = input("\n你> ").strip()
-        if not user_input:
-            continue
-        if user_input in {"exit", "quit"}:
-            break
-        session_id, _ = await _run_turn(user_input, options, session_id)
+    try:
+        while True:
+            try:
+                user_input = pt_prompt("你> ").strip()
+            except EOFError:
+                print("\n再见！")
+                break
+            if not user_input:
+                continue
+            if user_input in {"exit", "quit"}:
+                break
+            session_id, _ = await _run_turn(user_input, options, session_id)
+    except KeyboardInterrupt:
+        print("\n再见！")
 
 
 def main() -> None:
