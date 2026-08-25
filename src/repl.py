@@ -15,7 +15,7 @@ from pathlib import Path
 
 from claude_agent_sdk import ClaudeAgentOptions, query
 from claude_agent_sdk.types import TextBlock, ToolUseBlock
-from prompt_toolkit.shortcuts import prompt as pt_prompt
+from prompt_toolkit.shortcuts import PromptSession
 
 from config import AppConfig, DEFAULT_CONFIG_PATH, load_config
 from prompts import MAIN_SYSTEM_PROMPT
@@ -98,6 +98,7 @@ async def _run_turn(prompt: str, opts: ClaudeAgentOptions, sid: str | None) -> t
 
 async def run_repl(cfg: AppConfig) -> None:
     options = build_options(cfg)
+    ps = PromptSession()
     print(
         f"故事挖掘员就绪（模型 {cfg.chat.model}）。"
         "输入故事线关键词开始，exit/quit 退出。"
@@ -106,7 +107,7 @@ async def run_repl(cfg: AppConfig) -> None:
     try:
         while True:
             try:
-                user_input = pt_prompt("你> ").strip()
+                user_input = (await ps.prompt_async("你> ")).strip()
             except EOFError:
                 print("\n再见！")
                 break
