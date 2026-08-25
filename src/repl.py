@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import argparse
 import asyncio
+import os
 import sys
 from dataclasses import replace
 from pathlib import Path
@@ -97,6 +98,12 @@ async def _run_turn(prompt: str, opts: ClaudeAgentOptions, sid: str | None) -> t
 
 
 async def run_repl(cfg: AppConfig) -> None:
+    # 注入模型端点环境变量到当前进程，SDK 子进程会继承。
+    # opts.env 理论上也能传，但 SDK 的 env 合并逻辑与父进程已有
+    # ANTHROPIC_BASE_URL 交互时不可靠；直接设 os.environ 确保生效。
+    for k, v in cfg.sdk_env().items():
+        os.environ[k] = v
+
     options = build_options(cfg)
     ps = PromptSession()
     print(
