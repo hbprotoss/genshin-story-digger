@@ -28,7 +28,7 @@ def build_options(cfg: AppConfig) -> ClaudeAgentOptions:
     system_prompt = (
         MAIN_SYSTEM_PROMPT
         .replace("{max_subagents}", str(cfg.agent.max_subagents))
-        .replace("{output_dir}", str(cfg.agent.output_dir) + "/")
+        .replace("{output_dir}", str(cfg.agent.output_dir).rstrip("/") + "/")
     )
     return ClaudeAgentOptions(
         system_prompt=system_prompt,
@@ -135,5 +135,8 @@ def main() -> None:
     )
     args = parser.parse_args()
     cfg = load_config(args.config)
+    # 将相对路径转绝对，避免 agent 的 Write 工具写到意料之外的目录
+    cfg.agent.output_dir = cfg.agent.output_dir.resolve()
     cfg.agent.output_dir.mkdir(parents=True, exist_ok=True)
+    print(f"输出目录：{cfg.agent.output_dir}")
     asyncio.run(run_repl(cfg))
