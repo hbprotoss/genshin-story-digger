@@ -58,18 +58,39 @@
 
 - Python 3.13+
 - [uv](https://docs.astral.sh/uv/) 包管理器
-- 可达的 MongoDB 实例（含原神文本数据）
+- 可达的 MongoDB 实例
+- 原神文本数据 —— 见下方[准备文本数据](#2-准备文本数据)
 - MiMo 模型 API Key（或其他 Anthropic 兼容端点）
 
 ### 1. 克隆 & 安装
 
 ```bash
-git clone <repo-url> /opt/src/story-digger-agent
-cd /opt/src/story-digger-agent
+git clone git@github.com:hbprotoss/genshin-story-digger.git
+cd genshin-story-digger
 uv sync
 ```
 
-### 2. 配置
+### 2. 准备文本数据
+
+本项目**只负责挖掘**，不含游戏文本数据。文本数据请从配套仓库获取并导入 MongoDB：
+
+**👉 [hbprotoss/genshin-story-data](https://github.com/hbprotoss/genshin-story-data)**
+
+导入后，目标数据库（默认 `mihoyo`）应包含以下集合：
+
+| 集合 | 用途 | 必需字段 |
+|------|------|----------|
+| `mission_filtered` | 任务对白正文 | `id`, `name`, `text` |
+| `book_filtered` | 书籍正文 | `id`, `name`, `text` |
+| `artifact_filtered` | 圣遗物文本 | `id`, `name`, `text` |
+| `weapon_filtered` | 武器文本 | `id`, `name`, `text` |
+| `map_text_filtered` | 地图可交互文本 | `id`, `name`, `text` |
+| `character_filtered` | 角色资料 | `id`, `name`, `text` |
+| `mission` / `book` / `artifact` / `weapon` / `map_text` / `character` | 元数据（版本、地区等），供 `get_meta` 查询 | `id`, `version`, `ext` … |
+
+> 本项目对 MongoDB **纯只读**，不会修改任何数据。
+
+### 3. 配置
 
 创建 `/root/.story-digger-agent/config.toml`：
 
@@ -94,7 +115,7 @@ output_dir = "./output/"
 max_subagents = 5
 ```
 
-### 3. 运行
+### 4. 运行
 
 ```bash
 uv run python src/__main__.py
