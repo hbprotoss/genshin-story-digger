@@ -23,6 +23,32 @@ from prompts import MAIN_SYSTEM_PROMPT
 
 _SRC_DIR = Path(__file__).resolve().parent
 
+# 这些环境变量会被 Claude Code（SDK 子进程）读取，从而覆盖 config.toml 的配置：
+# 典型残留是上一套 Claude Code 代理留下的 ark-code-latest 模型名。启动 agent
+# 前必须清掉，否则主模型/（尤其）sub agent 模型会被指向 OpenRouter 上不存在的模型。
+_CLAUDE_CODE_ENV_LEAKS = (
+    "ANTHROPIC_MODEL",
+    "CLAUDE_CODE_SUBAGENT_MODEL",
+    "ANTHROPIC_API_KEY",
+    "ANTHROPIC_DEFAULT_OPUS_MODEL",
+    "ANTHROPIC_DEFAULT_OPUS_MODEL_NAME",
+    "ANTHROPIC_DEFAULT_SONNET_MODEL",
+    "ANTHROPIC_DEFAULT_SONNET_MODEL_NAME",
+    "ANTHROPIC_DEFAULT_HAIKU_MODEL",
+    "ANTHROPIC_DEFAULT_HAIKU_MODEL_NAME",
+)
+
+
+def sanitize_agent_env(env: dict[str, str] | None = None) -> None:
+    """清掉会覆盖 config.toml 的 Claude Code 环境变量（就地修改）。
+
+    ANTHROPIC_BASE_URL / ANTHROPIC_AUTH_TOKEN 不在清除之列——它们承载
+    config.toml 的值，由 sdk_env() 显式注入。
+    """
+    target = os.environ if env is None else env
+    for key in _CLAUDE_CODE_ENV_LEAKS:
+        target.pop(key, None)
+
 
 def build_options(cfg: AppConfig) -> ClaudeAgentOptions:
     system_prompt = (
@@ -102,9 +128,11 @@ async def _run_turn(prompt: str, opts: ClaudeAgentOptions, sid: str | None) -> t
 
 
 async def run_repl(cfg: AppConfig) -> None:
-    # 注入模型端点环境变量到当前进程，SDK 子进程会继承。
+    # 先清掉会覆盖 config.toml 的 Claude Code 环境变量（残留代理/模型设置），
+    # 再注入模型端点环境变量到当前进程，SDK 子进程会继承。
     # opts.env 理论上也能传，但 SDK 的 env 合并逻辑与父进程已有
     # ANTHROPIC_BASE_URL 交互时不可靠；直接设 os.environ 确保生效。
+    sanitize_agent_env()
     for k, v in cfg.sdk_env().items():
         os.environ[k] = v
 

@@ -5,7 +5,7 @@ pytest.importorskip("claude_agent_sdk")
 from claude_agent_sdk.types import AssistantMessage, TextBlock, ToolUseBlock
 
 from config import load_config
-from repl import build_options, format_message
+from repl import build_options, format_message, sanitize_agent_env
 
 
 @pytest.fixture()
@@ -41,6 +41,40 @@ def test_build_options_disables_claude_code_settings(cfg):
     # 里的 env（如 ANTHROPIC_BASE_URL 代理）、MCP server、权限等，覆盖本程序的配置。
     opts = build_options(cfg)
     assert opts.setting_sources == []
+
+
+def test_sanitize_agent_env_clears_claude_code_leaks():
+    # 残留的 Claude Code 代理变量会覆盖 config.toml：ANTHROPIC_MODEL /
+    # CLAUDE_CODE_SUBAGENT_MODEL 会让（尤其 sub agent 的）模型指向不存在的
+    # 代理模型名，ANTHROPIC_API_KEY 会与 AUTH_TOKEN 冲突。启动 agent 前必须清掉。
+    env = {
+        "ANTHROPIC_MODEL": "ark-code-latest[1m]",
+        "CLAUDE_CODE_SUBAGENT_MODEL": "ark-code-latest[1m]",
+        "ANTHROPIC_API_KEY": "bad",
+        "ANTHROPIC_DEFAULT_OPUS_MODEL": "x",
+        "ANTHROPIC_DEFAULT_OPUS_MODEL_NAME": "x",
+        "ANTHROPIC_DEFAULT_SONNET_MODEL": "x",
+        "ANTHROPIC_DEFAULT_SONNET_MODEL_NAME": "x",
+        "ANTHROPIC_DEFAULT_HAIKU_MODEL": "x",
+        "ANTHROPIC_DEFAULT_HAIKU_MODEL_NAME": "x",
+        "PATH": "/usr/bin",
+    }
+    sanitize_agent_env(env)
+    for key in (
+        "ANTHROPIC_MODEL", "CLAUDE_CODE_SUBAGENT_MODEL", "ANTHROPIC_API_KEY",
+        "ANTHROPIC_DEFAULT_OPUS_MODEL", "ANTHROPIC_DEFAULT_OPUS_MODEL_NAME",
+        "ANTHROPIC_DEFAULT_SONNET_MODEL", "ANTHROPIC_DEFAULT_SONNET_MODEL_NAME",
+        "ANTHROPIC_DEFAULT_HAIKU_MODEL", "ANTHROPIC_DEFAULT_HAIKU_MODEL_NAME",
+    ):
+        assert key not in env
+    assert env["PATH"] == "/usr/bin"
+
+
+def test_sanitize_agent_env_keeps_endpoint_vars():
+    # BASE_URL / AUTH_TOKEN 由 config.toml 经 sdk_env() 注入，不在清除之列
+    env = {"ANTHROPIC_BASE_URL": "u", "ANTHROPIC_AUTH_TOKEN": "t"}
+    sanitize_agent_env(env)
+    assert env == {"ANTHROPIC_BASE_URL": "u", "ANTHROPIC_AUTH_TOKEN": "t"}
 
 
 def test_format_message_text_and_tool_use():
