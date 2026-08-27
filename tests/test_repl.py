@@ -35,6 +35,14 @@ def test_build_options_wires_model_env_and_mcp(cfg):
     assert "/tmp/story-digger-test-output" in opts.system_prompt
 
 
+def test_build_options_disables_claude_code_settings(cfg):
+    # 必须显式清空 setting_sources，否则 SDK 不传 --setting-sources，
+    # 子进程 CLI 会回落到默认（user/project/local），读取 ~/.claude/settings.json
+    # 里的 env（如 ANTHROPIC_BASE_URL 代理）、MCP server、权限等，覆盖本程序的配置。
+    opts = build_options(cfg)
+    assert opts.setting_sources == []
+
+
 def test_format_message_text_and_tool_use():
     msg = AssistantMessage(
         content=[

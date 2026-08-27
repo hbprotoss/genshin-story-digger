@@ -37,6 +37,10 @@ def build_options(cfg: AppConfig) -> ClaudeAgentOptions:
         # bypassPermissions；改用工具白名单让 agent 可写文件、派发 subagent、
         # 用本项目的 MCP 工具，而不触发该 guard。
         permission_mode="default",
+        # 不读取任何 Claude Code 设置源（user/project/local），否则 SDK 子进程
+        # CLI 会加载 ~/.claude/settings.json 的 env（如 ANTHROPIC_BASE_URL 代理）、
+        # MCP server、权限与 hooks，覆盖本程序 config.toml 的配置。
+        setting_sources=[],
         allowed_tools=[
             "Read", "Glob", "Grep", "LSP",
             "Write", "Edit",
