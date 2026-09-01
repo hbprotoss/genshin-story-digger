@@ -7,7 +7,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from urllib.parse import quote_plus
 
-DEFAULT_CONFIG_PATH = Path("/root/.story-digger-agent/config.toml")
+DEFAULT_CONFIG_PATH = Path("~/.story-digger-agent/config.toml").expanduser()
 
 
 @dataclass
