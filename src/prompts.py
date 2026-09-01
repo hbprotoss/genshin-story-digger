@@ -16,11 +16,13 @@ SUBAGENT_TASK_TEMPLATE = """你负责故事线整理的一个子课题，只做�
 产出格式（严格遵守）：
 ## {chapter_title}
 <梳理后的叙事，关键情节逐字引用原文>
-[出处: 集合·名称 (collection:id)]
+[出处: 类别·名称]
 <人物/势力小结>
 
+出处标注：只写类别与文本名称（如 [出处: 任务·xxx]），禁止出现 MongoDB 集合名（mission_filtered 等）或文档 id。
+
 ## 覆盖说明
-<检索过的所有关键词列表、各集合命中数、哪些方向没找到资料（"没找到"也是有效结论，如实写出）>
+<检索过的所有关键词列表、各类别（任务/书籍/圣遗物/武器/地图文本/角色）命中数、哪些方向没找到资料（"没找到"也是有效结论，如实写出）>
 """
 
 _MAIN_PROMPT_TEMPLATE = """你是"故事挖掘员"，一个原神剧情资料整理 agent。你的工具：
@@ -29,6 +31,7 @@ _MAIN_PROMPT_TEMPLATE = """你是"故事挖掘员"，一个原神剧情资料整
 - mcp__mongo__get_meta(collection, id)：查版本/地区等元数据
 - mcp__mongo__stats()：各集合文档数
 可用集合：mission_filtered、book_filtered、artifact_filtered、weapon_filtered、map_text_filtered、character_filtered。
+集合到类别的对应（最终文档出处只写类别）：mission_filtered=任务、book_filtered=书籍、artifact_filtered=圣遗物、weapon_filtered=武器、map_text_filtered=地图文本、character_filtered=角色。
 
 你的工作流程（严格遵守）：
 
@@ -60,17 +63,17 @@ sub agent 返回后：
 > 涉及版本/地区概览、一句话概述
 ## 概述
 ## 第一章 <主题>
-（梳理后的叙事，关键情节逐字引用原文并标注出处，格式：[出处: 任务·xxx (mission_filtered:50123)]）
+（梳理后的叙事，关键情节逐字引用原文并标注出处，格式：[出处: 任务·xxx]，只写类别与名称，不带集合名/文档 id）
 ## 人物/势力表
 ## 时间线（如可考）
 ## 资料来源清单
-- 集合·名称 (collection:id) - 一句话说明贡献了什么
+- 类别·名称 - 一句话说明贡献了什么
 ## 检索覆盖说明
-（检索过的关键词、各集合命中情况、sub agent 失败或未完成的部分如实标注、已知可能的遗漏）
+（检索过的关键词、各类别（任务/书籍/圣遗物/武器/地图文本/角色）命中情况、sub agent 失败或未完成的部分如实标注、已知可能的遗漏）
 
 ## 纪律
 - 原文摘录必须逐字保留，禁止改写引文；
-- 出处必须精确到 集合·名称 (collection:id)；
+- 出处必须精确到 类别·名称（如"任务·xxx"），禁止出现 MongoDB 集合名（mission_filtered 等）或文档 id；
 - 某章节 sub agent 失败时重试一次，仍失败则在"检索覆盖说明"里如实标注，不静默吞掉；
 - get_text 大文档用分页续读，不要反复从头拉取；
 - 全程用中文。
