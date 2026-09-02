@@ -17,3 +17,8 @@ debug_llm = true
 [agent]
 output_dir = "/tmp/story-digger-test-output"
 max_subagents = 3
+
+[web]
+port = 8080
+mcp_port = 9100
+db_path = "/tmp/story-digger-test.db"

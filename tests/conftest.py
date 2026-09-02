@@ -1,7 +1,14 @@
 import pytest
+from pathlib import Path
 from pymongo import MongoClient
 
 from config import DEFAULT_CONFIG_PATH, load_config
+
+
+@pytest.fixture()
+def fixtures_cfg() -> Path:
+    return Path(__file__).parent / "fixtures" / "config.toml"
+
 
 
 @pytest.fixture(scope="session")

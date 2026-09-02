@@ -11,6 +11,14 @@ DEFAULT_CONFIG_PATH = Path("~/.story-digger-agent/config.toml").expanduser()
 
 
 @dataclass
+class WebConfig:
+    host: str = "127.0.0.1"
+    port: int = 8080
+    mcp_port: int = 9100
+    db_path: Path = Path("~/.story-digger-agent/story-digger.db").expanduser()
+
+
+@dataclass
 class MongoConfig:
     host: str
     port: int
@@ -51,6 +59,7 @@ class AppConfig:
     mongo: MongoConfig
     chat: ChatConfig
     agent: AgentConfig = field(default_factory=AgentConfig)
+    web: WebConfig = field(default_factory=WebConfig)
 
     def sdk_env(self) -> dict[str, str]:
         return {
@@ -62,11 +71,18 @@ class AppConfig:
 def load_config(path: Path | str = DEFAULT_CONFIG_PATH) -> AppConfig:
     data = tomllib.loads(Path(path).read_text(encoding="utf-8"))
     agent_data = data.get("agent", {})
+    web_data = data.get("web", {})
     return AppConfig(
         mongo=MongoConfig(**data["mongo"]),
         chat=ChatConfig(**data["chat"]),
         agent=AgentConfig(
             output_dir=Path(agent_data.get("output_dir", "./output")),
             max_subagents=agent_data.get("max_subagents", 5),
+        ),
+        web=WebConfig(
+            host=web_data.get("host", "127.0.0.1"),
+            port=web_data.get("port", 8080),
+            mcp_port=web_data.get("mcp_port", 9100),
+            db_path=Path(web_data.get("db_path", "~/.story-digger-agent/story-digger.db")).expanduser(),
         ),
     )
