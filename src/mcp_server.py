@@ -192,9 +192,18 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="Mongo 检索 MCP server")
     parser.add_argument("--uri", required=True, help="MongoDB 连接 URI（含 authSource）")
     parser.add_argument("--database", required=True, help="数据库名")
+    parser.add_argument(
+        "--transport", default="stdio", choices=["stdio", "streamable-http"],
+        help="传输协议（默认 stdio；streamable-http 供 web 常驻共享）",
+    )
+    parser.add_argument("--host", default="127.0.0.1", help="streamable-http 监听地址")
+    parser.add_argument("--port", type=int, default=9100, help="streamable-http 监听端口")
     args = parser.parse_args()
     init_client(args.uri, args.database)
-    mcp.run()  # stdio
+    if args.transport == "stdio":
+        mcp.run()  # stdio
+    else:
+        mcp.run(transport="streamable-http", host=args.host, port=args.port)
 
 
 if __name__ == "__main__":
