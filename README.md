@@ -17,14 +17,14 @@
 - **📚 六类文本全覆盖** — 任务对白、书籍、圣遗物、武器、地图可交互文本、角色资料，一个不落
 - **📎 原文出处精确标注** — 关键情节逐字引用原文，格式 `[出处: 类别·名称]`（只写任务/书籍/圣遗物/武器/地图文本/角色等类别与文本名，不暴露集合名等内部信息），可溯源验证
 - **🪟 覆盖透明化** — 产出文档含「检索覆盖说明」章节，列出所有检索过的关键词、各类别命中数、已知遗漏，诚实透明
-- **💬 交互式 REPL** — 多轮对话，随时追问补充，会话状态持久保留
+- **🌐 Web 服务** — 常驻 MCP + FastAPI 后端，浏览器多轮对话，会话状态持久保留
 
 ---
 
 ## 🏗️ 架构速览
 
 ```
-你 (REPL)
+浏览器 (Web 前端)
   │  "渊下"
   ▼
 ┌─────────────────────────────────────────┐
@@ -117,9 +117,13 @@ max_subagents = 5
 
 ### 4. 运行
 
+启动 Web 服务（常驻 MCP + FastAPI）：
+
 ```bash
 uv run python src/__main__.py
 ```
+
+默认监听 http://127.0.0.1:8080，浏览器打开该地址即可开始对话。
 
 也可以指定配置文件路径：
 
@@ -127,16 +131,19 @@ uv run python src/__main__.py
 uv run python src/__main__.py --config /path/to/custom-config.toml
 ```
 
+> 前端开发：`cd web && uv run npm run dev`（生产环境由后端托管构建产物）。
+
 ---
 
 ## 🎮 使用示例
 
 ```
 $ uv run python src/__main__.py
-输出目录：/opt/src/story-digger-agent/output
-故事挖掘员就绪（模型 mimo-v2.5-pro）。输入故事线关键词开始，exit/quit 退出。
+[INFO] Mongo MCP 已启动
+[INFO] Web 服务运行于 http://127.0.0.1:8080（常驻 MCP + FastAPI）
+```
 
-你> 渊下
+浏览器打开 http://127.0.0.1:8080，输入故事线关键词（如「渊下」）：
 
 ⟐ mcp__mongo__search_texts(keywords=['渊下'], collections=None, limit=20)
 
@@ -149,9 +156,7 @@ $ uv run python src/__main__.py
 3. 龙骨血睦 — 渊下宫支线，珊瑚宫与海祇岛相关
    出处：任务对白 (mission_filtered)
 
-请选择（可多选，或补充描述）：
-
-你> 1，再加上海祇岛相关的内容
+请在页面中继续选择或补充描述，Agent 将并行派发 Sub Agent 逐章节挖掘，最终产出 Markdown 文档到输出目录。
 
 ## 渊下宫·白夜国与海祇岛
 
@@ -274,8 +279,8 @@ uv run --with pytest pytest tests/ -v
 | Agent 框架 | claude-agent-sdk ≥ 0.2.140 |
 | 模型 | MiMo (mimo-v2.5-pro) / Anthropic 兼容端点 |
 | MCP 框架 | FastMCP ≥ 3.4.7 |
+| Web 框架 | FastAPI ≥ 0.115.0 + uvicorn |
 | 数据库驱动 | pymongo ≥ 4.17.0 |
-| REPL | prompt_toolkit ≥ 3.0.53 |
 | 测试 | pytest ≥ 9.1.1 |
 
 ---
@@ -284,18 +289,21 @@ uv run --with pytest pytest tests/ -v
 
 ```
 src/
-├── __main__.py      # 入口
+├── __main__.py      # Web 入口（常驻 MCP + uvicorn）
 ├── config.py        # 配置解析（TOML → 运行时对象）
+├── app.py           # FastAPI 路由 + SSE
+├── agent_runtime.py # 封装 Agent query/resume、事件流、并发锁
+├── conversations.py # 会话持久化（SQLite）
 ├── mcp_server.py    # Mongo MCP Server（4 个工具）
+├── mongo_mcp.py     # 常驻 MCP 生命周期管理
 ├── prompts.py       # 主 Agent + Sub Agent 提示词
-└── repl.py          # 交互式 REPL（asyncio + session resume）
 
 tests/
 ├── conftest.py      # 共享 fixtures
 ├── test_config.py   # 配置解析测试
 ├── test_mcp_*.py    # MCP 工具测试
 ├── test_prompts.py  # 提示词模板测试
-└── test_repl.py     # REPL 构建测试
+└── test_web_*.py    # Web 后端测试（config/app/runtime/conversations/mcp）
 ```
 
 ---

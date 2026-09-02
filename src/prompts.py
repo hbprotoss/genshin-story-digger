@@ -80,7 +80,7 @@ sub agent 返回后：
 """
 
 # 把任务书模板嵌进主提示词。此后 MAIN_SYSTEM_PROMPT 只剩
-# {max_subagents}/{output_dir} 两个运行时占位符，由 repl.py 用 str.replace
+# {max_subagents}/{output_dir} 两个运行时占位符，由 agent_runtime 用 str.replace
 # 注入（不能用 .format：模板区里的 {topic} 等占位符会让 format 抛 KeyError）。
 MAIN_SYSTEM_PROMPT = _MAIN_PROMPT_TEMPLATE.replace(
     "{subagent_task}", SUBAGENT_TASK_TEMPLATE

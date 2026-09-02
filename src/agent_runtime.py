@@ -1,7 +1,7 @@
 """Web 版 agent 后端的运行时层：封装 SDK 的 query/resume、流式转 SSE 事件、
 单生成锁、中止单回合、捕获 Write 文档保存。
 
-与 REPL 共用同一套 config 驱动，故这里保留了从 repl.py 迁移来的两个纯函数
+由 Web 入口（__main__.py / app.py）驱动；这里保留了原 REPL 迁移来的两个纯函数
 （sanitize_agent_env / format_message）与 _CLAUDE_CODE_ENV_LEAKS 常量，内容不变。
 """
 
