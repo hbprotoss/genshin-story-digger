@@ -32,13 +32,15 @@ def main() -> None:
     mcp = MongoMcp(cfg)
     mcp.start()
 
-    mgr = ConversationManager(cfg.web.db_path)
-    rt = AgentRuntime(cfg)
-
-    from app import create_app
-    app = create_app(cfg, mgr, rt)
-
+    # mcp.start() 之后到 uvicorn.run 结束全部纳入 try/finally，
+    # 确保任何构造异常都会触发 mcp.stop() 清理，避免悬挂 MCP 子进程
     try:
+        mgr = ConversationManager(cfg.web.db_path)
+        rt = AgentRuntime(cfg)
+
+        from app import create_app
+        app = create_app(cfg, mgr, rt)
+
         uvicorn.run(app, host=cfg.web.host, port=cfg.web.port)
     finally:
         mcp.stop()
