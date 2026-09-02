@@ -84,6 +84,13 @@ def create_app(cfg: AppConfig, mgr: ConversationManager, rt: AgentRuntime) -> Fa
 
         return StreamingResponse(gen(), media_type="text/event-stream", headers=SSE)
 
+    @app.delete("/api/conversations/{cid}")
+    def delete_conversation(cid: int):
+        if mgr.get(cid) is None:
+            raise HTTPException(status_code=404, detail="会话不存在")
+        mgr.delete(cid)
+        return {"ok": True}
+
     @app.post("/api/conversations/{cid}/abort")
     def abort_conversation(cid: int):
         rt.abort(cid)

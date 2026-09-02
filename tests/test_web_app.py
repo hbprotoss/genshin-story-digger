@@ -53,6 +53,12 @@ def test_send_message_streams_sse(client):
     assert "done" in body
 
 
+def test_delete_conversation(client):
+    cid = client.post("/api/conversations", json={"title": "x"}).json()["id"]
+    assert client.delete(f"/api/conversations/{cid}").status_code == 200
+    assert client.get(f"/api/conversations/{cid}").status_code == 404
+
+
 def test_abort_inactive_returns_ok(client):
     assert client.post("/api/conversations/1/abort").status_code == 200
 
