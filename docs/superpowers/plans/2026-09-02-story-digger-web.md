@@ -14,7 +14,8 @@
 
 - 开发分支：`feature/web`
 - 包管理：`uv`（`uv sync` / `uv add` / `uv run`）
-- 后端仍为**非包结构**：`src/` 无 `__init__.py`，模块间 `from config import ...` 路径导入，`pythonpath = ["src"]`（pytest 配置已有）
+- 后端仍为**非包结构**：`src/` 无 `__init__.py`，模块间用同级路径导入（`from x import ...`），启动靠 `pythonpath=["src"]`（pytest 配置已有）+ `uv run python src/__main__.py`。
+- **本计划不做"转为正式包"改造（保持非包）**——不做 `[build-system]`、加 `__init__.py`、改包内相对导入 `from .x import ...`、配 `[project.scripts]` 这些。新增模块沿用现有风格：`src/app.py` 里 `from config import AppConfig`、`from agent_runtime import AgentRuntime` 等同级导入。若未来需要正式部署（systemd/Docker/`pip install`），另立独立重构任务再转包，不夹在功能开发中。
 - 入口：`uv run python src/__main__.py`（保留 `__main__.py`，**不创建** `__init__.py`）
 - 移除 REPL：`src/repl.py` 与 `tests/test_repl.py` 删除，其逻辑迁入 `src/agent_runtime.py`
 - 所有输出/回复用中文
