@@ -7,6 +7,7 @@ from fastapi.testclient import TestClient
 from claude_agent_sdk.types import AssistantMessage, ResultMessage, TextBlock, ToolUseBlock
 
 import agent_runtime as ar_module
+import app as app_module
 from app import create_app
 from config import load_config
 from conversations import ConversationManager
@@ -80,3 +81,41 @@ def test_projects_preview(client, tmp_path):
     r = client.get("/api/projects/纳西妲.md")
     assert r.status_code == 200
     assert "# 纳西妲" in r.text
+
+
+def test_static_hosting_serves_frontend_and_keeps_api(tmp_path, monkeypatch):
+    """前端 dist 存在时：/ 返回 index.html、assets 可访问，/api 路由不被吞掉。"""
+    # 构造一个假的 web/dist 目录（不依赖真实构建产物）
+    dist = tmp_path / "dist"
+    (dist / "assets").mkdir(parents=True)
+    (dist / "index.html").write_text(
+        "<!doctype html><html><body>Story Digger</body></html>", encoding="utf-8"
+    )
+    (dist / "assets" / "app.js").write_text("console.log('hi')", encoding="utf-8")
+    monkeypatch.setattr(app_module, "DIST_DIR", dist)
+
+    cfg = load_config(Path(__file__).parent / "fixtures" / "config.toml")
+    cfg.web.db_path = tmp_path / "test.db"
+    cfg.agent.output_dir = tmp_path / "output"
+
+    async def fake_query(prompt, options):
+        if False:
+            yield  # pragma: no cover
+
+    monkeypatch.setattr(ar_module, "query", fake_query)
+    mgr = ConversationManager(cfg.web.db_path)
+    rt = ar_module.AgentRuntime(cfg)
+    c = TestClient(create_app(cfg, mgr, rt))
+
+    root = c.get("/")
+    assert root.status_code == 200
+    assert "Story Digger" in root.text
+
+    asset = c.get("/assets/app.js")
+    assert asset.status_code == 200
+    assert asset.headers["content-type"].startswith("text/javascript")
+
+    # API 路由优先于静态 mount，不被吞掉
+    api = c.get("/api/conversations")
+    assert api.status_code == 200
+    assert api.json() == []

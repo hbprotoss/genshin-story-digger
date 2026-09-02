@@ -8,6 +8,7 @@ from typing import AsyncIterator
 
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import FileResponse, StreamingResponse
+from fastapi.staticfiles import StaticFiles
 
 from agent_runtime import AgentRuntime
 from config import AppConfig
@@ -15,6 +16,9 @@ from conversations import ConversationManager
 
 
 SSE = {"Cache-Control": "no-cache", "X-Accel-Buffering": "no"}
+
+# 前端构建产物目录：src/app.py 的上一级（仓库根）下的 web/dist
+DIST_DIR = Path(__file__).resolve().parent.parent / "web" / "dist"
 
 
 def _sse_event(event: dict) -> str:
@@ -114,5 +118,11 @@ def create_app(cfg: AppConfig, mgr: ConversationManager, rt: AgentRuntime) -> Fa
         if out != target.parent or not target.is_file():
             raise HTTPException(status_code=404, detail="文档不存在")
         return FileResponse(target, media_type="text/markdown", filename=filename)
+
+    # 前端构建产物已存在时，由 FastAPI 托管（生产部署模式）。
+    # 挂在 API 路由之后：/api/* 优先命中上面的接口；其余路径交给 SPA。
+    # html=True 让 / 及未知路径回落到 index.html，前端刷新不 404。
+    if DIST_DIR.is_dir():
+        app.mount("/", StaticFiles(directory=DIST_DIR, html=True), name="web")
 
     return app

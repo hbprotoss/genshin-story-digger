@@ -117,21 +117,29 @@ max_subagents = 5
 
 ### 4. 运行
 
-启动 Web 服务（常驻 MCP + FastAPI）：
+**一键启动（推荐）** —— 编译前端资源后，交由后端托管：
 
 ```bash
-uv run python src/__main__.py
+./start.sh
 ```
 
-默认监听 http://127.0.0.1:8080，浏览器打开该地址即可开始对话。
+`start.sh` 会：安装前端依赖（首次）、`npm run build` 编译前端到 `web/dist`，再启动后端（常驻 MCP + FastAPI）。后端自动托管 `web/dist` 中的前端资源。
 
 也可以指定配置文件路径：
+
+```bash
+./start.sh --config /path/to/custom-config.toml
+```
+
+等价的手动方式（前端已构建时）：
 
 ```bash
 uv run python src/__main__.py --config /path/to/custom-config.toml
 ```
 
-> 前端开发：`cd web && uv run npm run dev`（生产环境由后端托管构建产物）。
+默认监听 http://127.0.0.1:8080，浏览器打开该地址即可开始对话。
+
+> 前端开发（热更新）：`cd web && npm run dev`（Vite dev server 代理 `/api` 到后端）。生产/一键启动则由后端托管构建产物。
 
 ---
 
