@@ -70,11 +70,12 @@ FastAPI 后端 (uvicorn 单进程 asyncio)
 
 ### 4.1 后端 `src/`（FastAPI，直接改造现有目录）
 
-现有 `src/` 新增以下文件（`repl.py` 移除，其余保留）：
+现有 `src/` 新增以下文件（`repl.py` 移除，其余保留）。沿用现有**非包结构**：
+`src/` 不是 Python 包（无 `__init__.py`），模块间用路径导入（`pythonpath=["src"]`），
+启动方式为 `uv run python src/__main__.py`。
 
 ```
 src/
-├── __init__.py          # 已有
 ├── __main__.py          # 改动：入口由 REPL 改为 Web 启动编排
 ├── config.py            # 已有，新增 [web] 配置段
 ├── prompts.py           # 已有，不变
@@ -236,7 +237,7 @@ docs/superpowers/specs/   # 本设计文档
 
 ## 9. 启动方式
 
-正式入口 `python -m src`（或 `uv run story-digger-web`）：
+正式入口 `uv run python src/__main__.py`：
 1. 载入 config → 按需新增 `[web]` 段
 2. 拉起常驻 MCP 子进程（streamable-http, `127.0.0.1:{MCP_PORT}`）
 3. 启动 uvicorn（`127.0.0.1:{WEB_PORT}`）
