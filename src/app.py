@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import AsyncIterator
 
@@ -28,8 +29,26 @@ def _sse_event(event: dict) -> str:
     return f"event: {event['event']}\ndata: {data}\n\n"
 
 
-def create_app(cfg: AppConfig, mgr: ConversationManager, rt: AgentRuntime) -> FastAPI:
-    app = FastAPI(title="story-digger-web")
+def create_app(cfg: AppConfig, mgr: ConversationManager, rt: AgentRuntime,
+               mcp=None) -> FastAPI:
+    """构建 FastAPI 应用。
+
+    mcp 为可选的常驻 MCP 生命周期对象（具备 start()/stop()）；传入时在
+    lifespan 的 startup/shutdown 中拉起与清理，确保 uvicorn reload 重建
+    worker 时 MCP 子进程随之重启，避免孤儿进程。
+    """
+
+    @asynccontextmanager
+    async def lifespan(app: FastAPI):
+        if mcp is not None:
+            mcp.start()
+        try:
+            yield
+        finally:
+            if mcp is not None:
+                mcp.stop()
+
+    app = FastAPI(title="story-digger-web", lifespan=lifespan)
 
     @app.post("/api/conversations")
     def create_conversation(body: dict | None = None):

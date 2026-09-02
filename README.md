@@ -139,7 +139,16 @@ uv run python src/__main__.py --config /path/to/custom-config.toml
 
 默认监听 http://127.0.0.1:8080，浏览器打开该地址即可开始对话。
 
-> 前端开发（热更新）：`cd web && npm run dev`（Vite dev server 代理 `/api` 到后端）。生产/一键启动则由后端托管构建产物。
+**开发模式（前端 HMR + 后端热加载）**：
+
+```bash
+./start.sh --dev            # 前端 http://localhost:5173，改 src/** 后端自动重启
+./start.sh --dev --config /path/to/custom-config.toml
+```
+
+`--dev` 会：起 Vite dev server（HMR，代理 `/api` 到后端 8080），并用 `uvicorn --reload` 启动后端——修改 `src/**` 时后端自动热重启，常驻 MCP 子进程也随 worker 由 lifespan 一并重建/清理，避免孤儿进程。
+
+> 等价的手动区分：后端 `uv run python src/__main__.py --dev`，前端 `cd web && npm run dev`。生产/一键启动由后端托管构建产物。
 
 ---
 
