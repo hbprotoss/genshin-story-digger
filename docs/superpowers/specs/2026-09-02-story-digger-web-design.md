@@ -1,14 +1,14 @@
 # 🖥️ Story Digger Web — 设计规格
 
 > Story Digger Agent 的 Web 对话界面：类似 ChatGPT/grok 的主流大模型对话交互，
-> 通过浏览器与现有 claude-agent-sdk 驱动的挖矿 Agent 对话。
+> 通过浏览器与 claude-agent-sdk 驱动的挖矿 Agent 对话。
 
 ## 1. 背景与目标
 
 现有 `story-digger-agent` 是一个基于 Claude Code SDK 驱动的 **CLI REPL**（`repl.py`），
-通过 `prompt_toolkit` 在终端流式输出 Agent 回复。本需求为其开发一个 **Web 前端**，
+通过 `prompt_toolkit` 在终端流式输出 Agent 回复。本需求将交互**从 CLI 迁移为 Web 版本**：
 保留 Agent 的全部能力（关键词澄清 → 规划 → 并行挖掘 → 汇总写文档），
-但把交互从终端搬到浏览器，提供 ChatGPT 式对话体验。
+提供 ChatGPT 式对话体验，并**移除 REPL 模式**（`repl.py` 删除，web 成为唯一入口）。
 
 **核心目标：**
 - 浏览器里与 Agent 多轮对话，流式渲染回复
@@ -52,37 +52,43 @@ FastAPI 后端 (uvicorn 单进程 asyncio)
 
 **三层核心：**
 1. **前端** `web/`（React SPA）—— 对话界面
-2. **后端** `src/web/`（FastAPI）—— 会话编排 + Agent 运行时 + SSE 桥 + SQLite
+2. **后端** `src/`（FastAPI，直接改造现有目录）—— 会话编排 + Agent 运行时 + SSE 桥 + SQLite
 3. **常驻 MCP** —— 复用 `src/mcp_server.py`，新增 streamable-http 运行模式
 
 ### 复用与改动现有代码
 
-- **`src/repl.py`**：复用 `sanitize_agent_env()`、`build_options()`、`format_message()`。
-  改动点：`build_options()` 里的 `mcp_servers` 由 stdio 改为指向常驻 HTTP 端点
-  （通过参数注入，不破坏 REPL 现有行为）。
+- **`src/repl.py`**：**删除**（REPL 模式移除）。其中 `sanitize_agent_env()`、
+  `build_options()`、`format_message()` 的逻辑迁入新的 `src/agent_runtime.py`，
+  `mcp_servers` 直接改为指向常驻 HTTP 端点。
 - **`src/config.py`**：新增 web 相关配置段（`web.host/port`、`web.db_path`、MCP 常驻端口）。
 - **`src/mcp_server.py`**：新增 `--transport streamable-http` 运行模式（FastMCP 原生支持），
   通过 `--host / --port` 启动为共享服务。
+- **`src/__main__.py`**：入口由 REPL 改为 Web 启动编排。
+- **`pyproject.toml`**：移除 `prompt-toolkit` 依赖；新增 FastAPI/uvicorn 等。
 
 ## 4. 组件详解
 
-### 4.1 后端 `src/web/`
+### 4.1 后端 `src/`（FastAPI，直接改造现有目录）
 
-目录结构：
+现有 `src/` 新增以下文件（`repl.py` 移除，其余保留）：
 
 ```
-src/web/
-├── __init__.py
-├── main.py            # 启动编排：拉起常驻 MCP 子进程 + 启动 uvicorn
-├── app.py             # FastAPI 实例 + 路由
-├── agent_runtime.py   # AgentRuntime：query+resume、流式事件转换、停止
-├── conversations.py   # ConversationManager + SQLite 会话/消息持久化
-└── mongo_mcp.py       # 常驻 MCP 子进程生命周期管理
+src/
+├── __init__.py          # 已有
+├── __main__.py          # 改动：入口由 REPL 改为 Web 启动编排
+├── config.py            # 已有，新增 [web] 配置段
+├── prompts.py           # 已有，不变
+├── mcp_server.py        # 已有，新增 streamable-http 运行模式
+├── app.py               # 新增：FastAPI 实例 + 路由
+├── agent_runtime.py     # 新增：AgentRuntime（迁移 repl 的 build_options/format_message 等）
+├── conversations.py     # 新增：ConversationManager + SQLite 会话/消息持久化
+└── mongo_mcp.py         # 新增：常驻 MCP 子进程生命周期管理
 ```
 
 #### `AgentRuntime`（核心复用层）
 
-- 复用 `repl.build_options()`，但 `mcp_servers` 指向常驻 HTTP 端点
+- 迁移 `repl.py` 的 `sanitize_agent_env()` / `build_options()` / `format_message()`，
+  但 `mcp_servers` 直接指向常驻 HTTP 端点
   （`McpHttpServerConfig{type:"http", url:"http://127.0.0.1:{MCP_PORT}/mcp"}`）。
 - 每回合一次 `query(prompt, options)`，`resume` 用该会话的 agent `session_id`。
 - 流式迭代结果，转成 SSE 事件推到前端：
@@ -137,7 +143,7 @@ src/web/
    链接到 `GET /api/projects/{filename}`。
 3. **入口备份**：`GET /api/projects` 读取 `output_dir` 目录兜底，
    用户也能在"项目"视图浏览所有已生成文档（含未在当前对话中保存的）。
-4. REPL 行为**不变**（stdio 模式仍按原样打印摘要）——改造只在 Web 后端路径生效。
+4. REPL 已移除；文档保存逻辑只在 Web 后端路径生效。
 
 ### 4.3 前端 `web/`（React + Vite + TS）
 
@@ -215,24 +221,28 @@ web/
 
 ```
 src/
-├── web/                  # 新增：FastAPI 后端（见 §4.1）
-├── mcp_server.py         # 改动：新增 --transport/--host/--port
-├── repl.py               # 改动：build_options 支持 mcp 端点注入（向后兼容）
-└── config.py             # 改动：新增 [web] 配置段
+├── __main__.py          # 改动：入口改为 Web 启动编排
+├── app.py               # 新增：FastAPI 实例 + 路由
+├── agent_runtime.py     # 新增：AgentRuntime（迁移 repl 逻辑）
+├── conversations.py     # 新增：ConversationManager + SQLite
+├── mongo_mcp.py         # 新增：常驻 MCP 生命周期
+├── mcp_server.py        # 改动：新增 --transport/--host/--port（streamable-http）
+├── config.py            # 改动：新增 [web] 配置段
+└── repl.py              # 移除
 web/                      # 新增：React 前端（见 §4.3）
-tests/                    # 扩展：web 后端测试
+tests/                    # 扩展：后端测试（移除 test_repl.py）
 docs/superpowers/specs/   # 本设计文档
 ```
 
 ## 9. 启动方式
 
-新增入口 `python -m src.web.main`（或 `uv run story-digger-web`）：
+正式入口 `python -m src`（或 `uv run story-digger-web`）：
 1. 载入 config → 按需新增 `[web]` 段
 2. 拉起常驻 MCP 子进程（streamable-http, `127.0.0.1:{MCP_PORT}`）
 3. 启动 uvicorn（`127.0.0.1:{WEB_PORT}`）
 4. 前端开发期由 Vite dev server 代理 `/api` 到后端；生产由同一 FastAPI 静态托管 `web/dist`
 
-CLI REPL 入口 **保持可用**，两条路径共用 `repl.build_options()` / `mcp_server.py`。
+REPL 入口已移除，Web 为唯一入口。
 
 ## 10. 未决/后续（明确排除本期）
 
