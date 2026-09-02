@@ -29,6 +29,12 @@ export default function ChatView({ conversationId }: { conversationId: number })
     fetchConversation(conversationId).then(({ messages }) => {
       if (!alive) return
       setMessages(messages)
+      // 从历史消息中恢复 document 卡片（spec §4.1：刷新可完整恢复对话与文档卡片）
+      const histDocs = messages
+        .filter((m) => m.kind === 'document')
+        .map((m) => String(m.meta.filename ?? ''))
+        .filter(Boolean)
+      setDocs(histDocs)
     })
     return () => { alive = false }
   }, [conversationId])
