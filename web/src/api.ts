@@ -30,6 +30,10 @@ export async function abortConversation(id: number): Promise<void> {
   await fetch(`/api/conversations/${id}/abort`, { method: 'POST' })
 }
 
+export async function deleteConversation(id: number): Promise<void> {
+  await fetch(`/api/conversations/${id}`, { method: 'DELETE' })
+}
+
 export async function streamChat(
   id: number, content: string,
   onEvent: (e: SSEEvent) => void,

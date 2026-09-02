@@ -1,5 +1,5 @@
 import { beforeEach, afterEach, describe, it, expect, vi } from 'vitest'
-import { fetchConversations, streamChat, abortConversation } from './api'
+import { fetchConversations, streamChat, abortConversation, deleteConversation } from './api'
 
 beforeEach(() => {
   vi.stubGlobal('fetch', vi.fn())
@@ -22,6 +22,14 @@ describe('abortConversation', () => {
     vi.mocked(fetch).mockResolvedValue(new Response('{}'))
     await abortConversation(2)
     expect(fetch).toHaveBeenCalled()
+  })
+})
+
+describe('deleteConversation', () => {
+  it('DELETEs the conversation', async () => {
+    vi.mocked(fetch).mockResolvedValue(new Response('{}'))
+    await deleteConversation(3)
+    expect(fetch).toHaveBeenCalledWith('/api/conversations/3', { method: 'DELETE' })
   })
 })
 
