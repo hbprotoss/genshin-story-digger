@@ -14,6 +14,13 @@ export default function ChatView({ conversationId }: { conversationId: number })
   const abortRef = useRef<AbortController | null>(null)
   const bottomRef = useRef<HTMLDivElement | null>(null)
 
+  // 卸载时中止在途请求，避免流式事件污染已切换/卸载的状态
+  useEffect(() => {
+    return () => {
+      abortRef.current?.abort()
+    }
+  }, [])
+
   useEffect(() => {
     let alive = true
     setMessages([])
