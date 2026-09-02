@@ -13,3 +13,14 @@ def test_main_has_transport_option():
     assert "--transport" in main_src
     assert "--host" in main_src
     assert "--port" in main_src
+
+
+def test_spawn_command_points_to_http(fixtures_cfg):
+    from mongo_mcp import mcp_cmd
+    from config import load_config
+    cfg = load_config(fixtures_cfg)
+    cmd = mcp_cmd(cfg)
+    assert "--transport" in cmd
+    assert "streamable-http" in cmd
+    assert str(cfg.web.mcp_port) in cmd
+    assert "--uri" in cmd
